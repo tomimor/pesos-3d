@@ -63,7 +63,24 @@ const threadLinks = [...document.querySelectorAll('.hilo a')];
 
 const canvas = document.querySelector('.vitrina');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const maxRatio = Math.min(devicePixelRatio, 2);
+renderer.setPixelRatio(maxRatio);
+// step the resolution down (never back up) while frames run slow, so phones keep scrolling smoothly
+const perf = { ratio: maxRatio, last: 0, slow: 0, n: 0 };
+function adapt(time) {
+  const dt = time - perf.last;
+  perf.last = time;
+  if (dt > 200 || document.hidden) return; // tab switches and load stalls aren't steady-state cost
+  perf.n++;
+  if (dt > 22) perf.slow++;
+  if (perf.n < 90) return;
+  if (perf.slow > 30 && perf.ratio > 1) {
+    perf.ratio = Math.max(1, perf.ratio - 0.25);
+    renderer.setPixelRatio(perf.ratio);
+    layout();
+  }
+  perf.n = perf.slow = 0;
+}
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -256,7 +273,7 @@ let lastInk = '';
 const pointer = new THREE.Vector2(), tilt = new THREE.Vector2();
 addEventListener('pointermove', (e) => pointer.set((e.clientX / vw) * 2 - 1, (e.clientY / vh) * 2 - 1), { passive: true });
 
-let lastActive = -2;
+let lastActive = -2, drewLast = true;
 function frame(time) {
   const t = time / 1000;
   flutter.value = t;
@@ -343,7 +360,10 @@ function frame(time) {
     lastActive = active;
     threadLinks.forEach((a, i) => a.setAttribute('aria-current', String(active - 1 === i)));
   }
-  renderer.render(scene, camera);
+  // nothing on stage (archive, footer): clear once, then stop drawing
+  const showing = holders.some((h) => h.outer.visible);
+  if (showing || drewLast) { renderer.render(scene, camera); adapt(time); }
+  drewLast = showing;
   requestAnimationFrame(frame);
 }
 
