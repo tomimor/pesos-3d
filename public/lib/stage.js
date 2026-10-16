@@ -42,22 +42,27 @@
       bottom: 16px;
       display: flex;
       gap: 8px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--text, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
     }
     .toolbar button {
       appearance: none;
-      border: 1px solid rgba(20, 20, 19, 0.18);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.92);
-      color: #1a1915;
+      min-height: 40px;
+      border: 1px solid var(--stage-btn-line, rgba(20, 20, 19, 0.18));
+      border-radius: 999px;
+      background: var(--stage-btn-bg, rgba(255, 255, 255, 0.92));
+      color: var(--stage-btn-ink, #1a1915);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
       font-family: inherit;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 500;
       line-height: 1;
-      padding: 9px 12px;
+      padding: 0 16px;
       cursor: pointer;
+      transition: border-color 0.25s, background 0.25s;
     }
-    .toolbar button:hover { background: #fff; }
+    .toolbar button:hover { border-color: var(--stage-btn-hover, #1a1915); }
+    .toolbar button:focus-visible { outline: 2px solid var(--stage-btn-hover, #1a1915); outline-offset: 3px; }
     .toolbar button:active { transform: translateY(1px); }
     .toolbar button[disabled] { opacity: 0.5; pointer-events: none; }
     .note {
@@ -65,7 +70,7 @@
       left: 16px;
       bottom: 16px;
       max-width: 60%;
-      font: 400 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font: 400 12px/1.5 var(--text, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
       color: var(--stage-note, rgba(26, 25, 21, 0.55));
       user-select: none;
     }
@@ -81,7 +86,7 @@
       text-align: center;
       white-space: pre-line;
     }
-    @media (max-width: 560px) {
+    @media (max-width: 1000px) {
       .note { display: none; }
     }
   `;

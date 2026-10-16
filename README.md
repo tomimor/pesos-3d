@@ -21,13 +21,21 @@ These are digital replicas, not legal tender.
 
 ```
 public/
+  index.html         scroll-driven showcase (lib/home.js, lib/home.css)
   billetes/<slug>/   page + textures
   monedas/<slug>/    page (geometry built at runtime from photos)
   monedas/fotos/     coin face photos (see credits)
-  lib/               shared viewer (stage.js) and coin builders
+  lib/piezas.js      the collection: names, facts, ink colours
+  lib/               shared viewer (stage.js), coin builders, guilloché rosettes
   modelos/           exported .glb files
-  previews/          gallery thumbnails
+  previews/          transparent thumbnails
 scripts/export.mjs   regenerates modelos/ and previews/
+
+## Add a piece
+
+1. Build the page under `public/billetes/<slug>/` or `public/monedas/<slug>/` (copy a sibling).
+2. Add an entry to `public/lib/piezas.js`.
+3. Run `npm run export -- <slug>` to produce its GLB and preview.
 ```
 
 ## Run

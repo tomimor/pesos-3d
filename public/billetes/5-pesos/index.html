@@ -22,19 +22,13 @@
   }
 }
 </script>
-<style>
-  html,body{margin:0;height:100%;background:#2a2826}
-  three-d-stage:not(:defined){visibility:hidden}
-
-  .hud{position:fixed;top:16px;left:16px;z-index:1;display:flex;gap:8px;align-items:baseline;font:500 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#f0ebe1}
-  .hud a{color:inherit;opacity:.6;text-decoration:none}.hud a:hover{opacity:1}.hud span{opacity:.35}
-  .hud h1{font:inherit;margin:0}
-  three-d-stage{--stage-note:rgba(240,235,225,.7)}
-</style>
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../lib/site.css">
+<link rel="stylesheet" href="../../lib/pieza.css">
 </head>
 <body>
-<header class="hud"><a href="../../">pesos-3d</a><span>/</span><h1>5 pesos</h1></header>
-<three-d-stage view="top" name="argentina-5-pesos" background="#2a2826"></three-d-stage>
+<three-d-stage view="top" name="argentina-5-pesos"></three-d-stage>
 <script src="../../lib/stage.js"></script>
 <script type="module">
 const stage = document.querySelector('three-d-stage');
@@ -107,5 +101,6 @@ stage.setObject(model);
 const clock = new THREE.Clock();
 (function tick() { deform(clock.getElapsedTime()); requestAnimationFrame(tick); })();
 </script>
+<script type="module" src="../../lib/pieza.js"></script>
 </body>
 </html>

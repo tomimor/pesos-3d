@@ -50,17 +50,20 @@ try {
     execFileSync(path.resolve(import.meta.dirname, '../node_modules/.bin/gltf-transform'),
       ['optimize', raw, out, '--compress', 'draco', '--texture-compress', 'webp', '--texture-size', '4096'], { stdio: 'ignore' });
     fs.rmSync(raw);
-    // hide the HUD and toolbar so the preview is just the object
-    await page.addStyleTag({ content: '.hud{display:none}' });
-    await page.evaluate(() => {
+    // render one frame straight from the WebGL canvas: compositor screenshots stall on heavy software-GL pages
+    await page.addStyleTag({ content: 'three-d-stage{inset:0!important}' });
+    await page.waitForTimeout(1500);
+    const dataUrl = await page.evaluate(() => {
       const s = document.querySelector('three-d-stage');
       s._controls.autoRotate = false;
-      for (const el of s.shadowRoot.querySelectorAll('.toolbar,.note')) el.style.display = 'none';
+      s._ground.visible = false;
+      s._renderer.setClearColor(0x000000, 0);
+      s._renderer.render(s._scene, s._camera);
+      return s._renderer.domElement.toDataURL('image/png');
     });
-    await page.waitForTimeout(500);
     const png = path.join(root, 'previews', `${slug}.png`);
-    await page.screenshot({ path: png });
-    execFileSync('cwebp', ['-quiet', '-q', '80', '-resize', '600', '0', png, '-o', png.replace(/\.png$/, '.webp')]);
+    fs.writeFileSync(png, Buffer.from(dataUrl.split(',')[1], 'base64'));
+    execFileSync('cwebp', ['-quiet', '-q', '82', '-alpha_q', '90', '-resize', '600', '0', png, '-o', png.replace(/\.png$/, '.webp')]);
     fs.rmSync(png);
     const kb = Math.round(fs.statSync(out).size / 1024);
     console.log(`${slug}: ${kb} KB${errors.length ? ` — ${errors.length} error(s)` : ''}`);
