@@ -331,59 +331,102 @@ body.agarrando, body.agarrando * { cursor: grabbing; user-select: none; }
   letter-spacing: -0.03em;
 }
 .archivo-head p { margin: 0; color: var(--paper-dim); }
-.archivo-grid {
-  list-style: none;
-  margin: 0 auto;
-  padding: 0;
-  max-width: 1240px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 40px 28px;
-}
-.archivo-grid a { display: block; text-decoration: none; }
-.archivo-grid figure { margin: 0; }
-.archivo-grid .ph {
-  position: relative;
-  aspect-ratio: 3 / 2;
-  border-radius: 14px;
-  background: radial-gradient(70% 70% at 50% 45%, color-mix(in oklab, var(--c) 55%, transparent), transparent 75%), rgba(255, 255, 255, 0.025);
-  border: 1px solid var(--paper-faint);
-  overflow: hidden;
-  transition: border-color 0.3s;
-}
-.archivo-grid img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.archivo-grid a:hover .ph { border-color: var(--paper-dim); }
-.archivo-grid a:hover img { transform: scale(1.06) rotate(-1.5deg); }
-.archivo-grid figcaption { margin-top: 14px; display: flex; flex-direction: column; gap: 2px; }
-.archivo-grid figcaption b { font-family: var(--display); font-weight: 500; font-size: 22px; letter-spacing: -0.01em; }
-.archivo-grid figcaption span { color: var(--paper-dim); font-size: 14px; }
+.archivo-grid { max-width: 1240px; margin: 0 auto; }
 
-.archivo-grid .buscada .ph {
+/* ---------- the album ---------- */
+.album { max-width: 1240px; margin: 0 auto; display: grid; gap: clamp(56px, 8vw, 96px); }
+.hoja h3 {
+  margin: 0 0 28px;
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(26px, 2.6vw, 36px);
+  color: var(--glow);
+}
+.fundas, .bolsillos { list-style: none; margin: 0; padding: 0; display: grid; }
+.fundas { grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 44px 28px; }
+.bolsillos { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 40px 28px; }
+
+/* a clear plastic sleeve: the piece sits inside, a glare runs across the film */
+.funda {
+  position: relative;
   display: grid;
   place-items: center;
-  border: 1px dashed var(--paper-faint);
-  background: transparent;
-  color: var(--paper-faint);
+  aspect-ratio: 2.45;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 14px 0 -13px rgba(255, 255, 255, 0.22), 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+  text-decoration: none;
+  isolation: isolate;
 }
-.archivo-grid .buscada .ph svg { position: absolute; inset: -10%; width: 120%; height: 120%; }
-.archivo-grid .buscada .ph svg path { fill: none; stroke: currentColor; stroke-width: 0.6; vector-effect: non-scaling-stroke; opacity: 0.5; }
-.archivo-grid .buscada .ph strong {
+.funda::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.07) 42%, rgba(255, 255, 255, 0.02) 50%, transparent 58%);
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  transition: background-position 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  z-index: 2;
+}
+.funda img {
+  position: absolute;
+  inset: 7% 5% 6%;
+  width: 90%;
+  height: 87%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+a.funda:hover::after, a.funda:focus-visible::after { background-position: 0 0; }
+a.funda:hover img, a.funda:focus-visible img { transform: translateY(-9%) rotate(-0.6deg); }
+
+/* round pockets for coins and tokens */
+.bolsillos .funda {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0.12) 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 8px 18px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.bolsillos .funda::after { border-radius: 50%; }
+.bolsillos .funda img { inset: 10%; width: 80%; height: 80%; }
+.bolsillos a.funda:hover img, .bolsillos a.funda:focus-visible img { transform: translateY(-7%) scale(1.04); }
+
+.rotulo { margin: 14px 0 0; display: flex; flex-direction: column; gap: 2px; }
+.rotulo b { font-family: var(--display); font-weight: 500; font-size: 22px; letter-spacing: -0.01em; }
+.rotulo span { color: var(--paper-dim); font-size: 14px; }
+.bolsillos .rotulo { text-align: center; align-items: center; }
+.bolsillos .rotulo b { font-size: 18px; white-space: nowrap; }
+.bolsillos .rotulo span { font-size: 13px; text-wrap: balance; }
+
+/* the empty slots: a faint engraving and an outlined figure waiting for its piece */
+.buscada .funda { color: var(--paper-faint); overflow: hidden; }
+.buscada .funda svg { position: absolute; inset: -10%; width: 120%; height: 120%; }
+.buscada .funda svg path { fill: none; stroke: currentColor; stroke-width: 0.6; vector-effect: non-scaling-stroke; opacity: 0.22; }
+.buscada .funda strong {
   position: relative;
   font-family: var(--display);
   font-weight: 500;
-  font-size: 84px;
+  font-size: clamp(48px, 4.6vw, 72px);
   line-height: 1;
   color: transparent;
   -webkit-text-stroke: 1px var(--paper-dim);
 }
-.archivo-grid .buscada figcaption b { color: var(--paper-dim); }
+.buscada .rotulo b { color: var(--paper-dim); }
+.bolsillos .buscada .funda strong { font-size: 44px; }
+
+/* when the album opens, each piece slides down into its sleeve, one after another */
+.album:not(.abierto) .funda img { transform: translateY(-34%); opacity: 0; }
+.album.abierto .funda img {
+  /* backwards only, so the hover lift takes over once the piece has landed */
+  animation: enfundar 1s cubic-bezier(0.2, 0.75, 0.15, 1) calc(var(--i) * 90ms) backwards;
+}
+@keyframes enfundar { from { transform: translateY(-34%); opacity: 0; } 35% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .album .funda img { animation: none !important; transform: none !important; opacity: 1 !important; }
+}
 
 .sumar {
   max-width: 1240px;
@@ -432,10 +475,9 @@ body.agarrando, body.agarrando * { cursor: grabbing; user-select: none; }
   .hilo { display: none; }
   .counter { display: none; }
   .archivo-head, .pie { grid-template-columns: 1fr; }
-  .archivo-grid { grid-template-columns: 1fr 1fr; gap: 28px 14px; }
-  .archivo-grid figcaption b { font-size: 18px; }
-  .archivo-grid figcaption span { font-size: 13px; }
-  .archivo-grid .buscada .ph strong { font-size: 56px; }
+  .bolsillos { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; }
+  .rotulo b { font-size: 19px; }
+  .rotulo span { font-size: 13px; }
   .top nav a:not(:last-child) { display: none; }
 }
 @media (max-width: 760px) and (max-height: 700px) {

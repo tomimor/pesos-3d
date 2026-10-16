@@ -28,14 +28,16 @@ public/
   lib/piezas.js      the collection: names, facts, ink colours
   lib/               shared viewer (stage.js), coin builders, guilloché rosettes
   modelos/           exported .glb files
-  previews/          transparent thumbnails
-scripts/export.mjs   regenerates modelos/ and previews/
+  album/             face-on renders for the archive
+scripts/export.mjs   regenerates modelos/
+scripts/album.mjs    regenerates album/ from modelos/
 
 ## Add a piece
 
 1. Build the page under `public/billetes/<slug>/` or `public/monedas/<slug>/` (copy a sibling).
 2. Add an entry to `public/lib/piezas.js`.
-3. Run `npm run export -- <slug>` to produce its GLB and preview.
+3. Add a `lupa` detail for it: the point the home page magnifies.
+4. Run `npm run export -- <slug>`, then `npm run album`.
 ```
 
 ## Run
@@ -46,13 +48,14 @@ No build step. Serve `public/` with any static server:
 npx serve public
 ```
 
-To regenerate the GLB files and previews after changing a model:
+To regenerate the GLB files and album images after changing a model:
 
 ```sh
 npm install
 npx playwright install chromium
 npm run export            # all models
 npm run export -- 1-peso  # one model
+npm run album             # archive images
 ```
 
 ## Credits

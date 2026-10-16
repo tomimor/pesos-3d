@@ -36,13 +36,23 @@ coleccion.innerHTML = piezas.map((p, i) => {
 document.querySelector('.hilo').innerHTML = piezas
   .map((p) => `<a href="#${p.slug}"><span>${esc(p.numeral)} ${esc(p.unit)}</span></a>`).join('');
 
-document.querySelector('[data-archivo]').innerHTML =
-  piezas.map((p) => `<li><a href="${pathOf(p)}" style="--c:${p.glow}"><figure>
-    <div class="ph"><img src="previews/${p.slug}.webp" alt="" width="600" height="400" loading="lazy"></div>
-    <figcaption><b>${esc(p.label)}</b><span>${esc(p.title !== p.label ? p.title : p.facts[0][1])}</span></figcaption></figure></a></li>`).join('') +
-  buscadas.map((b) => `<li class="buscada"><figure>
-    <div class="ph">${rosette('buscada-' + b.title, { rings: 2 })}<strong>${esc(b.numeral)}</strong></div>
-    <figcaption><b>${esc(b.numeral)} ${esc(b.unit)}</b><span>${esc(b.title)}. Se busca</span></figcaption></figure></li>`).join('');
+// the archive is a collector's album: bills in sleeves, coins and tokens in round pockets,
+// and an empty slot for every piece still missing
+const rotulo = (b, span) => `<p class="rotulo"><b>${b}</b><span>${span}</span></p>`;
+const enFunda = (p, i) => `<li style="--i:${i}"><a class="funda" href="${pathOf(p)}" style="--c:${p.glow}">
+    <img src="album/${p.slug}.webp" alt="${esc(p.label)}, ${esc(p.title)}" loading="lazy"></a>
+    ${rotulo(esc(p.label), esc(p.title !== p.label ? p.title : p.facts[0][1]))}</li>`;
+const vacia = (b, i) => `<li class="buscada" style="--i:${i}"><div class="funda">${rosette('buscada-' + b.title, { rings: 2 })}<strong>${esc(b.numeral)}</strong></div>
+    ${rotulo(`${esc(b.numeral)} ${esc(b.unit)}`, `${esc(b.title)}. Se busca`)}</li>`;
+const hoja = (kind) => {
+  const tiene = piezas.filter((p) => (kind === 'billete' ? p.kind === 'billete' : p.kind !== 'billete'));
+  const faltan = buscadas.filter((b) => (kind === 'billete' ? b.kind === 'billete' : b.kind !== 'billete'));
+  return tiene.map(enFunda).join('') + faltan.map((b, i) => vacia(b, tiene.length + i)).join('');
+};
+document.querySelector('[data-billetes]').innerHTML = hoja('billete');
+document.querySelector('[data-monedas]').innerHTML = hoja('moneda');
+const album = document.querySelector('.album');
+new IntersectionObserver(([e], io) => { if (e.isIntersecting) { album.classList.add('abierto'); io.disconnect(); } }, { threshold: 0.15 }).observe(album);
 
 for (const el of document.querySelectorAll('.rosette[data-seed]')) el.innerHTML = rosette(el.dataset.seed);
 // pin the hero's colour so re-inking :root never repaints its rosette

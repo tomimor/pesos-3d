@@ -63,8 +63,8 @@ export const pathOf = (p) => `${p.kind === 'billete' ? 'billetes' : 'monedas'}/$
 
 // Pieces people have asked for; shown as empty slots to invite contributions.
 export const buscadas = [
-  { numeral: '100', unit: 'pesos', title: 'Evita' },
-  { numeral: '1', unit: 'austral', title: 'Austral, 1985' },
-  { numeral: '10', unit: 'centavos', title: 'Cabildo, 1992' },
-  { numeral: '1', unit: 'centavo', title: 'Peso moneda nacional, 1890' },
+  { kind: 'billete', numeral: '100', unit: 'pesos', title: 'Evita' },
+  { kind: 'billete', numeral: '1', unit: 'austral', title: 'Austral, 1985' },
+  { kind: 'moneda', numeral: '10', unit: 'centavos', title: 'Cabildo, 1992' },
+  { kind: 'moneda', numeral: '1', unit: 'centavo', title: 'Peso moneda nacional, 1890' },
 ];
