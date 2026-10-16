@@ -147,6 +147,14 @@ function makeHolder(section) {
     model.traverse((o) => { if (o.isMesh) for (const m of [o.material].flat()) { if (m.map) m.map.anisotropy = renderer.capabilities.getMaxAnisotropy(); } });
     spin.add(pivot);
     h.isBill = isBill;
+    const lupa = section.piece?.lupa;
+    if (lupa && !section.hero) {
+      // bills lie in XZ facing +Y, coins in XY facing +Z
+      h.focus = surfaceAt(model, lupa, isBill ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1));
+      pivot.updateMatrix();
+      h.focus.applyMatrix4(pivot.matrix);
+      h.zoom = lupa.zoom;
+    }
     // compile shaders and upload textures now, off the scroll path, instead of on first appearance
     return renderer.compileAsync(pivot, camera, scene).then(() => { warmTextures(pivot); h.ready = true; });
   });
@@ -188,6 +196,41 @@ function ruler() {
   );
   mesh.position.set(0, -0.001, 0.155);
   return mesh;
+}
+
+// The point on the textured front face whose UV is (u, v): found on the actual mesh, so curled
+// paper and textures that don't fill the face still land the detail exactly under the lens.
+function surfaceAt(model, { u, v }, front) {
+  model.updateMatrixWorld(true);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
+  // getBarycoord works on Vector3s: UVs go in with z = 0
+  const ta = new THREE.Vector3(), tb = new THREE.Vector3(), tc = new THREE.Vector3(), bary = new THREE.Vector3();
+  const target = new THREE.Vector3(u, 1 - v, 0); // the exported UVs run bottom-up
+  let hit = null, best = -Infinity;
+  model.traverse((o) => {
+    if (!o.isMesh || !o.material.map) return;
+    const pos = o.geometry.attributes.position, uv = o.geometry.attributes.uv, idx = o.geometry.index;
+    // only the face mesh itself: its normals point forward on average (edges and backs don't)
+    const nrm = o.geometry.attributes.normal;
+    let avg = 0;
+    for (let i = 0; i < nrm.count; i++) avg += n.fromBufferAttribute(nrm, i).transformDirection(o.matrixWorld).dot(front);
+    if (avg / nrm.count < 0.5) return;
+    const tris = idx ? idx.count / 3 : pos.count / 3;
+    for (let t = 0; t < tris; t++) {
+      const [i, j, k] = idx ? [idx.getX(3 * t), idx.getX(3 * t + 1), idx.getX(3 * t + 2)] : [3 * t, 3 * t + 1, 3 * t + 2];
+      ta.set(uv.getX(i), uv.getY(i), 0); tb.set(uv.getX(j), uv.getY(j), 0); tc.set(uv.getX(k), uv.getY(k), 0);
+      if (!THREE.Triangle.getBarycoord(target, ta, tb, tc, bary)) continue;
+      if (bary.x < 0 || bary.y < 0 || bary.z < 0) continue;
+      a.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+      b.fromBufferAttribute(pos, j).applyMatrix4(o.matrixWorld);
+      c.fromBufferAttribute(pos, k).applyMatrix4(o.matrixWorld);
+      THREE.Triangle.getNormal(a, b, c, n);
+      const facing = n.dot(front);
+      if (facing > best) { best = facing; hit = a.clone().multiplyScalar(bary.x).addScaledVector(b, bary.y).addScaledVector(c, bary.z); }
+    }
+  });
+  if (!hit) throw new Error(`lupa: no front-facing surface at uv (${u}, ${v})`);
+  return hit;
 }
 
 function warmTextures(root) {
@@ -274,12 +317,16 @@ const pointer = new THREE.Vector2(), tilt = new THREE.Vector2();
 addEventListener('pointermove', (e) => pointer.set((e.clientX / vw) * 2 - 1, (e.clientY / vh) * 2 - 1), { passive: true });
 
 let lastActive = -2, drewLast = true;
+const lens = new THREE.Vector3();
+const lupaEl = document.querySelector('.lupa'), lupaText = lupaEl.querySelector('p');
+let lastLupa = '', lastLupaPiece = null;
 function frame(time) {
   const t = time / 1000;
   flutter.value = t;
   if (!reduced) tilt.lerp(pointer, 0.05);
   key.position.set(-3 + tilt.x * 6, 4 - tilt.y * 5, 5);
 
+  let lupaZ = 0, lupaPiece = null;
   let mixInk = new THREE.Color(0, 0, 0), mixGlow = new THREE.Color(0, 0, 0), wsum = 0, active = -1, best = 1e9;
   // read every box before writing any style, so the loop never forces a synchronous layout
   const rects = sections.map((s) => s.el.getBoundingClientRect());
@@ -329,22 +376,41 @@ function frame(time) {
     }
     if (s.hero) {
       heroPose(h, idle);
-    } else if (h.isBill) {
-      // a note turned side to side to show its back, swaying as if held
-      h.spin.rotation.set(
-        Math.sin(idle * 0.5) * 0.05 - (1 - enter) * 0.5 + tilt.y * 0.14,
-        -0.35 + Math.PI * ss(0.3, 0.8, dwell) + (1 - enter) * -0.6 + Math.sin(idle * 0.37) * 0.06 + tilt.x * 0.2,
-        -0.12 + Math.sin(idle * 0.31) * 0.035,
-      );
     } else {
-      // coins and tokens: obverse first, reverse as you keep scrolling
-      h.spin.rotation.set(
-        0.18 + Math.sin(idle * 0.6) * 0.05 + tilt.y * 0.18,
-        -0.55 + Math.PI * ss(0.3, 0.8, dwell) + (1 - enter) * -1.4 + Math.sin(idle * 0.45) * 0.12 + tilt.x * 0.3,
-        0.05,
-      );
+      // the loupe: settle face-on, magnify one detail, let go, then turn the piece over
+      const z = reduced ? 0 : ss(0.1, 0.3, dwell) * (1 - ss(0.5, 0.64, dwell));
+      const calm = 1 - z * 0.92, flip = Math.PI * ss(0.68, 0.94, dwell);
+      if (h.isBill) {
+        // a note held up and swaying, turned at the end to show its back
+        h.spin.rotation.set(
+          (Math.sin(idle * 0.5) * 0.05 + tilt.y * 0.14) * calm - (1 - enter) * 0.5,
+          (-0.35 + Math.sin(idle * 0.37) * 0.06 + tilt.x * 0.2) * calm + flip + (1 - enter) * -0.6,
+          (-0.12 + Math.sin(idle * 0.31) * 0.035) * calm,
+        );
+      } else {
+        h.spin.rotation.set(
+          (0.18 + Math.sin(idle * 0.6) * 0.05 + tilt.y * 0.18) * calm,
+          (-0.55 + Math.sin(idle * 0.45) * 0.12 + tilt.x * 0.3) * calm + flip + (1 - enter) * -1.4,
+          0.05 * calm,
+        );
+      }
+      if (h.focus && z > 0) {
+        // enlarge, then slide so the detail sits exactly in the middle of the lens
+        const k = 1 + z * (h.zoom - 1);
+        h.outer.scale.multiplyScalar(k);
+        lens.copy(h.focus).applyEuler(h.spin.rotation).multiplyScalar(h.outer.scale.x * z);
+        h.outer.position.x -= lens.x;
+        h.outer.position.y -= lens.y;
+        h.outer.position.z -= lens.z;
+      }
+      if (z > lupaZ) { lupaZ = z; lupaPiece = s.piece; }
     }
   }
+
+  // the loupe lives above the canvas, so it is one fixed layer shared by every piece
+  const lz = lupaZ.toFixed(3);
+  if (lz !== lastLupa) { lastLupa = lz; root.style.setProperty('--z', lz); lupaEl.classList.toggle('on', lupaZ > 0); }
+  if (lupaPiece && lupaPiece !== lastLupaPiece) { lastLupaPiece = lupaPiece; lupaText.textContent = lupaPiece.lupa.caption; }
 
   // re-ink the page
   if (wsum > 0) { mixInk.multiplyScalar(1 / wsum); mixGlow.multiplyScalar(1 / wsum); } else { mixInk.copy(restInk); mixGlow.copy(restGlow); }

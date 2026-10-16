@@ -82,7 +82,7 @@
 /* ---------- sections ---------- */
 .hero, .pieza { position: relative; }
 .hero { height: 135vh; }
-.pieza { height: 190vh; content-visibility: auto; contain-intrinsic-size: auto 190vh; }
+.pieza { height: 300vh; content-visibility: auto; contain-intrinsic-size: auto 300vh; }
 .pin {
   position: sticky;
   top: 0;
@@ -172,7 +172,66 @@
   top: 50%;
   width: min(520px, 42vw);
   transform: translateY(calc(-50% + (1 - var(--e, 1)) * 60px));
-  opacity: var(--e, 1);
+  /* the words step aside first, before the loupe closes in */
+  opacity: calc(var(--e, 1) * clamp(0, 1 - var(--z, 0) * 3, 1));
+}
+
+/* the loupe closes like an iris: the clear circle starts wider than the screen and tightens onto
+   one detail, while everything outside it sinks into the ink */
+.lupa {
+  --r: min(calc(var(--as) * 0.3), 34vh);
+  --rr: calc(var(--r) + (1 - var(--z, 0)) * (1 - var(--z, 0)) * 110vmax);
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  visibility: hidden;
+}
+.lupa.on { visibility: visible; }
+.lupa::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: clamp(0, var(--z, 0) * 4, 1);
+  background: radial-gradient(circle at var(--ax) var(--ay), transparent calc(var(--rr) - 1px), color-mix(in oklab, var(--ink) 90%, black) var(--rr));
+}
+.lente {
+  position: absolute;
+  left: calc(var(--ax) - var(--rr));
+  top: calc(var(--ay) - var(--rr));
+  width: calc(var(--rr) * 2);
+  height: calc(var(--rr) * 2);
+  border-radius: 50%;
+  opacity: clamp(0, var(--z, 0) * 4 - 1, 1);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--glow) 70%, transparent), inset 0 0 60px 10px rgba(0, 0, 0, 0.35);
+  transform: rotate(calc(var(--z, 0) * 40deg));
+  /* graduated bezel, like a jeweller's loupe */
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--glow) 80%, transparent) 0 0.35deg, transparent 0.35deg 6deg);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+}
+.lupa p {
+  position: absolute;
+  left: clamp(16px, 6vw, 96px);
+  top: 50%;
+  width: min(400px, calc(var(--ax) - var(--r) - clamp(16px, 6vw, 96px) - 48px));
+  margin: 0;
+  opacity: clamp(0, (var(--z, 0) - 0.65) * 3, 1);
+  transform: translateY(calc(-50% + (1 - var(--z, 0)) * 40px));
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(24px, 2.3vw, 34px);
+  line-height: 1.22;
+  color: var(--paper);
+  text-wrap: balance;
+}
+.lupa p::before {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 1px;
+  margin-bottom: 22px;
+  background: var(--glow);
 }
 .copy h2 { margin: 0; font-weight: 400; }
 .numeral {
@@ -360,6 +419,8 @@
   .mesa .copy { width: auto; }
   .mesa h2 { font-size: 40px; }
   .copy { top: auto; bottom: 56px; transform: translateY(calc((1 - var(--e, 1)) * 40px)); }
+  .lupa { --r: min(42vw, 26vh); }
+  .lupa p { left: 16px; right: 16px; top: auto; bottom: 64px; width: auto; transform: translateY(calc((1 - var(--z, 0)) * 30px)); font-size: 24px; }
   .numeral { font-size: clamp(96px, calc(34vw * var(--fit, 1)), 180px); }
   .numeral.long { font-size: clamp(44px, 13vw, 84px); }
   .unit { font-size: 26px; }
