@@ -56,6 +56,7 @@ three-d-stage:not(:defined) { visibility: hidden; }
   animation: llegar 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s both;
 }
 .pieza-info a { pointer-events: auto; }
+.vt .pieza-info { animation: none; }
 @keyframes llegar { from { opacity: 0; transform: translateY(calc(-50% + 24px)); } }
 .pieza-info h1 { margin: 0 0 22px; font-weight: 400; }
 .pieza-info .numeral {

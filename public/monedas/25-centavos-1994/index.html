@@ -26,6 +26,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..600&display=swap">
 <link rel="stylesheet" href="../../lib/site.css">
 <link rel="stylesheet" href="../../lib/pieza.css">
+<script>addEventListener('pagereveal', (e) => { if (e.viewTransition) document.documentElement.classList.add('vt'); });</script>
+<script type="module" src="../../lib/pieza.js" blocking="render"></script>
 </head>
 <body>
 <three-d-stage name="25-centavos-1994" autorotate></three-d-stage>
@@ -45,6 +47,5 @@ stage.setObject(await buildCoin(THREE, {
   edge: { mode: 'reeded', patina: '70,55,35' },
 }));
 </script>
-<script type="module" src="../../lib/pieza.js"></script>
 </body>
 </html>

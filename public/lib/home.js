@@ -20,8 +20,8 @@ coleccion.innerHTML = piezas.map((p, i) => {
   <div class="pin">
     <div class="rosette" data-seed="${p.slug}"></div>
     <div class="copy">
-      <h2 id="h-${p.slug}"><span class="numeral${long ? ' long' : ''}">${esc(p.numeral)}</span><span class="unit">${esc(p.unit)}</span></h2>
-      <p class="title">${esc(p.title)}</p>
+      <h2 id="h-${p.slug}"><span class="numeral${long ? ' long' : ''}" style="view-transition-name:num-${p.slug}">${esc(p.numeral)}</span><span class="unit" style="view-transition-name:unit-${p.slug}">${esc(p.unit)}</span></h2>
+      <p class="title" style="view-transition-name:title-${p.slug}">${esc(p.title)}</p>
       <dl class="facts"><dt>Tipo</dt><dd>${kindLabel[p.kind]}</dd>${p.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
       <div class="actions">
         <a class="btn solid" href="${pathOf(p)}">Ver en detalle</a>

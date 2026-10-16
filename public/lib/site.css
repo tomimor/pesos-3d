@@ -106,3 +106,12 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* page to page: the engraved numeral travels between the collection and the piece */
+@view-transition { navigation: auto; }
+::view-transition-group(*) { animation-duration: 0.75s; animation-timing-function: cubic-bezier(0.2, 0.7, 0.15, 1); }
+::view-transition-old(root) { animation: 0.35s ease-in both salir; }
+::view-transition-new(root) { animation: 0.6s 0.1s ease-out both entrar; }
+@keyframes salir { to { opacity: 0; } }
+@keyframes entrar { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
