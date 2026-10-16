@@ -105,6 +105,23 @@
 /* hero: the one orchestrated entrance — rosette engraves itself, words rise line by line */
 @property --draw { syntax: '<number>'; inherits: true; initial-value: 1; }
 .hero .rosette { animation: grabar 3.2s cubic-bezier(0.45, 0, 0.2, 1) 0.1s both; }
+/* the coin lands: a ring runs out across the engraving and the rosette shudders */
+.onda {
+  position: absolute;
+  left: calc(var(--ax) - var(--as) * 0.25);
+  top: calc(var(--ay) - var(--as) * 0.25);
+  width: calc(var(--as) * 0.5);
+  height: calc(var(--as) * 0.5);
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 0 1.5px var(--glow), 0 0 40px 4px color-mix(in oklab, var(--glow) 35%, transparent);
+}
+.golpe .onda { animation: onda 1.1s cubic-bezier(0.15, 0.6, 0.3, 1) both; }
+@keyframes onda { from { transform: scale(0.35); opacity: 0.9; } to { transform: scale(2.3); opacity: 0; } }
+.golpe .rosette svg { animation: temblor 0.7s cubic-bezier(0.2, 0.7, 0.3, 1); }
+@keyframes temblor { 0% { transform: scale(1); } 18% { transform: scale(1.035) rotate(0.6deg); } 45% { transform: scale(0.992) rotate(-0.3deg); } 100% { transform: none; } }
 @keyframes grabar { from { --draw: 0; } to { --draw: 1; } }
 .hero h1 .l { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
 .hero h1 .l > span { display: block; animation: subir 1.2s cubic-bezier(0.2, 0.75, 0.15, 1) both; }
@@ -146,6 +163,8 @@
   font-size: 22px;
   color: var(--glow);
 }
+.golpe .toss-result { animation: anunciar 0.7s cubic-bezier(0.2, 0.75, 0.15, 1) both; }
+@keyframes anunciar { from { opacity: 0; transform: translateY(10px); letter-spacing: 0.08em; } }
 .scroll-cue {
   position: absolute;
   left: 50%;

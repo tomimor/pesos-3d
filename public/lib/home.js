@@ -567,25 +567,41 @@ function slide(h, dt) {
 
 const heroHolder = holders[0];
 const result = document.querySelector('.toss-result');
+const heroSection = document.querySelector('[data-hero]');
+// A real toss: a dip as the thumb flicks, a high arc flipping at constant speed toward the camera,
+// a small second hop on landing, then the coin rocks on its rim until it settles.
+const FLIGHT = 0.7, HOP = 0.84;
 function heroPose(h, idle) {
-  const base = { x: 0.16 + Math.sin(idle * 0.7) * 0.04, y: -0.5 + Math.sin(idle * 0.4) * 0.25, lift: 0 };
+  const base = { x: 0.16 + Math.sin(idle * 0.7) * 0.04, y: -0.5 + Math.sin(idle * 0.4) * 0.25, lift: 0, near: 0 };
   if (h.toss) {
-    const k = Math.min(1, (performance.now() - h.toss.start) / h.toss.dur);
-    const e = 1 - Math.pow(1 - k, 3);
-    base.x = h.toss.from + (h.toss.to - h.toss.from) * e;
-    base.y = -0.5 + (1 - e) * 0.6;
-    base.lift = Math.sin(Math.PI * Math.min(1, k * 1.08)) * 0.55;
-    if (k >= 1) {
-      h.toss.rest = h.toss.to;
-      result.textContent = h.toss.cara ? 'Salió cara.' : 'Salió ceca.';
-      h.tossRest = h.toss.to;
-      h.toss = null;
+    const k = Math.min(1, (performance.now() - h.toss.start) / h.toss.dur), T = h.toss;
+    const dip = k < 0.06 ? Math.sin((k / 0.06) * Math.PI) * -0.12 : 0;
+    if (k < FLIGHT) {
+      const u = k / FLIGHT;
+      base.x = T.from + (T.to - T.from) * u;
+      base.lift = 4 * 0.95 * u * (1 - u) + dip;
+      base.near = Math.sin(Math.PI * u) * 0.18;
+      base.y = -0.5 + Math.sin(u * Math.PI) * 0.35;
+    } else {
+      const v = (k - FLIGHT) / (1 - FLIGHT), hop = Math.min(1, (k - FLIGHT) / (HOP - FLIGHT));
+      if (!T.landed) { T.landed = true; land(T.cara); }
+      base.lift = k < HOP ? 4 * 0.12 * hop * (1 - hop) : 0;
+      // rocking on the rim, damped
+      base.x = T.to + Math.sin(v * Math.PI * 5) * 0.22 * Math.pow(1 - v, 2);
     }
+    if (k >= 1) { h.tossRest = T.to; h.toss = null; }
   } else if (h.tossRest !== undefined) {
     base.x = h.tossRest + Math.sin(idle * 0.7) * 0.04;
   }
   h.spin.rotation.set(base.x + tilt.y * 0.18, base.y + tilt.x * 0.3, 0.04);
   h.spin.position.y = base.lift;
+  h.spin.scale.setScalar(1 + base.near);
+}
+function land(cara) {
+  result.textContent = cara ? 'Salió cara.' : 'Salió ceca.';
+  heroSection.classList.remove('golpe');
+  void heroSection.offsetWidth; // restart the impact animation
+  heroSection.classList.add('golpe');
 }
 document.querySelector('[data-toss]').addEventListener('click', () => {
   const h = heroHolder;
@@ -593,10 +609,11 @@ document.querySelector('[data-toss]').addEventListener('click', () => {
   const cara = Math.random() < 0.5;
   const from = h.tossRest ?? 0.16;
   // whole flips, then land on the chosen face; facing the camera = cara
-  const turns = 5 + Math.floor(Math.random() * 3);
+  const turns = 6 + Math.floor(Math.random() * 3);
   const to = Math.round(from / (2 * Math.PI)) * 2 * Math.PI + turns * 2 * Math.PI + (cara ? 0.16 : Math.PI + 0.16);
   result.textContent = '';
-  h.toss = { start: performance.now(), dur: reduced ? 1 : 1500, from, to, cara };
+  if (reduced) { h.tossRest = to; land(cara); return; }
+  h.toss = { start: performance.now(), dur: 2300, from, to, cara };
 });
 
 requestAnimationFrame(frame);
