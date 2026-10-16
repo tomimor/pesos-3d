@@ -45,10 +45,13 @@ document.querySelector('[data-archivo]').innerHTML =
     <figcaption><b>${esc(b.numeral)} ${esc(b.unit)}</b><span>${esc(b.title)}. Se busca</span></figcaption></figure></li>`).join('');
 
 for (const el of document.querySelectorAll('.rosette[data-seed]')) el.innerHTML = rosette(el.dataset.seed);
+// pin the hero's colour so re-inking :root never repaints its rosette
+document.querySelector('[data-hero]').style.setProperty('--glow', piezas.find((p) => p.slug === '1-peso').glow);
 
 const sections = [...document.querySelectorAll('[data-slug]')].map((el) => ({
   el,
   pin: el.querySelector('.pin'),
+  rosette: el.querySelector('.rosette'),
   slug: el.dataset.slug,
   hero: el.hasAttribute('data-hero'),
   mesa: el.hasAttribute('data-mesa'),
@@ -126,8 +129,9 @@ function makeHolder(section) {
     }
     model.traverse((o) => { if (o.isMesh) for (const m of [o.material].flat()) { if (m.map) m.map.anisotropy = renderer.capabilities.getMaxAnisotropy(); } });
     spin.add(pivot);
-    h.ready = true;
     h.isBill = isBill;
+    // compile shaders and upload textures now, off the scroll path, instead of on first appearance
+    return renderer.compileAsync(pivot, camera, scene).then(() => { warmTextures(pivot); h.ready = true; });
   });
   return h;
 }
@@ -169,6 +173,14 @@ function ruler() {
   return mesh;
 }
 
+function warmTextures(root) {
+  root.traverse((o) => {
+    for (const m of [o.material].flat()) {
+      if (m) for (const v of Object.values(m)) if (v?.isTexture) renderer.initTexture(v);
+    }
+  });
+}
+
 function makeTable(section) {
   const outer = new THREE.Group(), spin = new THREE.Group(), deck = new THREE.Group();
   outer.add(spin);
@@ -198,7 +210,7 @@ function makeTable(section) {
     deck.position.sub(sphere.center);
     deck.scale.setScalar(1);
     h.radius = sphere.radius;
-    h.ready = true;
+    return renderer.compileAsync(deck, camera, scene).then(() => { warmTextures(deck); h.ready = true; });
   });
   return h;
 }
@@ -244,6 +256,7 @@ let lastInk = '';
 const pointer = new THREE.Vector2(), tilt = new THREE.Vector2();
 addEventListener('pointermove', (e) => pointer.set((e.clientX / vw) * 2 - 1, (e.clientY / vh) * 2 - 1), { passive: true });
 
+let lastActive = -2;
 function frame(time) {
   const t = time / 1000;
   flutter.value = t;
@@ -251,9 +264,11 @@ function frame(time) {
   key.position.set(-3 + tilt.x * 6, 4 - tilt.y * 5, 5);
 
   let mixInk = new THREE.Color(0, 0, 0), mixGlow = new THREE.Color(0, 0, 0), wsum = 0, active = -1, best = 1e9;
+  // read every box before writing any style, so the loop never forces a synchronous layout
+  const rects = sections.map((s) => s.el.getBoundingClientRect());
   for (let i = 0; i < sections.length; i++) {
     const s = sections[i], h = holders[i];
-    const r = s.el.getBoundingClientRect();
+    const r = rects[i];
     // where the sticky pin sits: 0 while pinned, ±vh while entering/leaving (derived from the section
     // box so it stays valid when content-visibility skips rendering offscreen sections)
     const pinTop = r.top > 0 ? r.top : r.bottom < vh ? r.bottom - vh : 0;
@@ -261,9 +276,10 @@ function frame(time) {
     const dwell = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - vh))); // 0 → 1 while pinned
     const visible = pinTop < vh && pinTop > -vh;
 
-    if (!s.hero) {
-      s.el.style.setProperty('--e', ss(0.15, 0.85, enter).toFixed(3));
-      s.el.style.setProperty('--draw', ss(0, 1, enter * 0.7 + dwell * 0.6).toFixed(3));
+    if (!s.hero && pinTop < vh * 1.2 && pinTop > -vh * 1.2) {
+      const e = ss(0.15, 0.85, enter).toFixed(3), d = ss(0, 1, enter * 0.7 + dwell * 0.6).toFixed(3);
+      if (e !== s.e) s.el.style.setProperty('--e', (s.e = e));
+      if (s.rosette && d !== s.d) s.rosette.style.setProperty('--draw', (s.d = d));
     }
 
     // colour weight: how centred this pin is
@@ -323,7 +339,10 @@ function frame(time) {
   }
   rim.color.copy(mixGlow);
 
-  threadLinks.forEach((a, i) => a.setAttribute('aria-current', String(active - 1 === i)));
+  if (active !== lastActive) {
+    lastActive = active;
+    threadLinks.forEach((a, i) => a.setAttribute('aria-current', String(active - 1 === i)));
+  }
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
