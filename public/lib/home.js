@@ -15,7 +15,7 @@ const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>'
 
 const coleccion = document.getElementById('coleccion');
 coleccion.innerHTML = piezas.map((p, i) => {
-  const long = p.numeral.length > 3;
+  const long = p.numeral.length > 2;
   return `<section class="pieza" id="${p.slug}" data-slug="${p.slug}" style="--glow:${p.glow}" aria-labelledby="h-${p.slug}">
   <div class="pin">
     <div class="rosette" data-seed="${p.slug}"></div>
@@ -254,7 +254,9 @@ function frame(time) {
   for (let i = 0; i < sections.length; i++) {
     const s = sections[i], h = holders[i];
     const r = s.el.getBoundingClientRect();
-    const pinTop = s.pin.getBoundingClientRect().top; // 0 while pinned, ±vh while entering/leaving
+    // where the sticky pin sits: 0 while pinned, ±vh while entering/leaving (derived from the section
+    // box so it stays valid when content-visibility skips rendering offscreen sections)
+    const pinTop = r.top > 0 ? r.top : r.bottom < vh ? r.bottom - vh : 0;
     const enter = 1 - Math.min(1, Math.max(0, pinTop / vh)); // 0 → 1 as it slides in
     const dwell = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - vh))); // 0 → 1 while pinned
     const visible = pinTop < vh && pinTop > -vh;

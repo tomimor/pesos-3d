@@ -82,7 +82,7 @@
 /* ---------- sections ---------- */
 .hero, .pieza { position: relative; }
 .hero { height: 135vh; }
-.pieza { height: 190vh; }
+.pieza { height: 190vh; content-visibility: auto; contain-intrinsic-size: auto 190vh; }
 .pin {
   position: sticky;
   top: 0;

@@ -32,7 +32,7 @@ export function rosette(seed, { rings = 3 } = {}) {
     const wobble = 4 + rand() * 6;
     for (let k = 0; k < strands; k++) {
       paths.push({
-        d: trace({ R: R + (k - strands / 2) * 0.9, lobes: ringLobes, amp, wobble, wobbleN: ringLobes * 3 + 1, phase: (k / strands) * Math.PI * 2 / ringLobes, steps: 1600 }),
+        d: trace({ R: R + (k - strands / 2) * 0.9, lobes: ringLobes, amp, wobble, wobbleN: ringLobes * 3 + 1, phase: (k / strands) * Math.PI * 2 / ringLobes, steps: 1100 }),
         o: 0.35 + 0.65 * (1 - Math.abs(k / (strands - 1) - 0.5) * 2),
         ring,
       });
@@ -41,7 +41,7 @@ export function rosette(seed, { rings = 3 } = {}) {
   // fine outer border band, like the frame around a banknote rosette
   const band = 470;
   for (let k = 0; k < 6; k++) {
-    paths.push({ d: trace({ R: band - k * 3.2, lobes: 120, amp: 4, wobble: 0, wobbleN: 1, phase: k * 0.6, steps: 2400 }), o: 0.6, ring: rings });
+    paths.push({ d: trace({ R: band - k * 3.2, lobes: 120, amp: 4, wobble: 0, wobbleN: 1, phase: k * 0.6, steps: 1600 }), o: 0.6, ring: rings });
   }
   return `<svg viewBox="-500 -500 1000 1000" aria-hidden="true" focusable="false">${paths
     .map((p) => `<path pathLength="1" d="${p.d}" style="--o:${p.o.toFixed(2)};--ring:${p.ring}"/>`)

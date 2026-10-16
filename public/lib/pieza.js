@@ -30,7 +30,7 @@ document.body.insertAdjacentHTML('afterbegin', `
   <a class="volver" href="../../#${p.slug}">Colección</a>
 </header>
 <section class="pieza-info" aria-labelledby="pieza-h">
-  <h1 id="pieza-h"><span class="numeral${p.numeral.length > 3 ? ' long' : ''}">${esc(p.numeral)}</span><span class="unit">${esc(p.unit)}</span><span class="title">${esc(p.title)}${hq ? ', alta definición' : ''}</span></h1>
+  <h1 id="pieza-h"><span class="numeral${p.numeral.length > 2 ? ' long' : ''}">${esc(p.numeral)}</span><span class="unit">${esc(p.unit)}</span><span class="title">${esc(p.title)}${hq ? ', alta definición' : ''}</span></h1>
   <dl class="facts"><dt>Tipo</dt><dd>${kindLabel[p.kind]}</dd>${p.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
   ${variant}
 </section>

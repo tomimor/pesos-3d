@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..800;1,6..96,400..600&display=swap');
-
 :root {
   /* the page is re-inked per piece; these are the resting values */
   --ink: #16202e;
