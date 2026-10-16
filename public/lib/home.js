@@ -247,7 +247,7 @@ function makeTable(section) {
   spin.add(deck);
   outer.visible = false;
   scene.add(outer);
-  const h = { outer, spin, ready: false, appear: 0, section, isTable: true };
+  const h = { outer, spin, deck, items: [], ready: false, appear: 0, section, isTable: true };
   h.load = () => Promise.all(table.map(([slug]) => loadGlb(slug))).then((gltfs) => {
     gltfs.forEach((gltf, i) => {
       const [slug, x, y, z, ry] = table[i];
@@ -264,6 +264,18 @@ function makeTable(section) {
       piece.position.set(x, y, z);
       piece.rotation.y = ry;
       deck.add(piece);
+      // an invisible stand-in for picking: raycasting the real meshes would mean millions of triangles,
+      // and coins get a wider one so a fingertip can catch them
+      const isBill = piece.rotation.x === 0, sz = box.getSize(new THREE.Vector3());
+      const proxy = new THREE.Mesh(
+        isBill ? new THREE.BoxGeometry(sz.x, sz.y + 0.004, sz.z) : new THREE.CylinderGeometry(sz.x * 0.8, sz.x * 0.8, sz.z + 0.004, 24),
+        new THREE.MeshBasicMaterial({ visible: false }),
+      );
+      if (!isBill) proxy.rotation.x = Math.PI / 2;
+      piece.add(proxy);
+      const item = { obj: piece, proxy, isBill, r: sz.x / 2, base: y, lift: 0, vel: new THREE.Vector2(), spin: 0 };
+      proxy.userData.item = item;
+      h.items.push(item);
     });
     deck.add(ruler());
     const sphere = new THREE.Box3().setFromObject(deck).getBoundingSphere(new THREE.Sphere());
@@ -320,10 +332,13 @@ let lastActive = -2, drewLast = true;
 const lens = new THREE.Vector3();
 const lupaEl = document.querySelector('.lupa'), lupaText = lupaEl.querySelector('p');
 let lastLupa = '', lastLupaPiece = null;
+let prevTime = 0;
 function frame(time) {
   const t = time / 1000;
+  const dt = Math.min(0.05, (time - prevTime) / 1000);
+  prevTime = time;
   flutter.value = t;
-  if (!reduced) tilt.lerp(pointer, 0.05);
+  if (!reduced && !grab) tilt.lerp(pointer, 0.05); // hold the table still while a piece is in hand
   key.position.set(-3 + tilt.x * 6, 4 - tilt.y * 5, 5);
 
   let lupaZ = 0, lupaPiece = null;
@@ -370,8 +385,9 @@ function frame(time) {
     const idle = reduced ? 0 : t;
     if (h.isTable) {
       // seen from above, then the camera lowers toward table height as you scroll
-      h.outer.scale.setScalar((size * 1.18 * (0.86 + 0.14 * ss(0, 1, enter))) / h.radius);
+      h.outer.scale.setScalar((size * (narrow ? 1.08 : 1.42) * (0.86 + 0.14 * ss(0, 1, enter))) / h.radius);
       h.spin.rotation.set(1.25 - 0.55 * ss(0.1, 0.9, dwell) + tilt.y * 0.08, -0.25 + 0.5 * ss(0, 1, dwell) + tilt.x * 0.12, 0);
+      slide(h, dt);
       continue;
     }
     if (s.hero) {
@@ -431,6 +447,110 @@ function frame(time) {
   if (showing || drewLast) { renderer.render(scene, camera); adapt(time); }
   drewLast = showing;
   requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- the table can be touched
+
+const tableHolder = holders.find((h) => h.isTable);
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), inv = new THREE.Matrix4(), onDeck = new THREE.Vector3();
+const deckRay = new THREE.Ray(), deckPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+let grab = null;
+
+function aimAt(x, y) {
+  ndc.set((x / vw) * 2 - 1, -(y / vh) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+}
+function itemAt(x, y) {
+  if (!tableHolder.ready || !tableHolder.outer.visible) return null;
+  aimAt(x, y);
+  const hit = ray.intersectObjects(tableHolder.items.map((i) => i.proxy), false)[0];
+  return hit ? hit.object.userData.item : null;
+}
+// where the pointer meets the table, in deck coordinates, at the height a held piece floats
+function deckPointer(x, y, height) {
+  aimAt(x, y);
+  inv.copy(tableHolder.deck.matrixWorld).invert();
+  deckRay.copy(ray.ray).applyMatrix4(inv);
+  deckPlane.constant = -height;
+  return deckRay.intersectPlane(deckPlane, onDeck);
+}
+
+addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || e.target.closest('a, button')) return;
+  const item = itemAt(e.clientX, e.clientY);
+  if (!item) return;
+  const p = deckPointer(e.clientX, e.clientY, item.base);
+  if (!p) return;
+  e.preventDefault();
+  grab = { item, id: e.pointerId, dx: item.obj.position.x - p.x, dz: item.obj.position.z - p.z, t: performance.now() };
+  item.vel.set(0, 0);
+  item.spin = 0;
+  document.body.classList.add('agarrando');
+});
+addEventListener('pointermove', (e) => {
+  if (!grab) {
+    if (e.pointerType === 'mouse') document.body.classList.toggle('agarrable', !!itemAt(e.clientX, e.clientY));
+    return;
+  }
+  if (e.pointerId !== grab.id) return;
+  const p = deckPointer(e.clientX, e.clientY, grab.item.base);
+  if (!p) return;
+  const now = performance.now(), it = grab.item, step = Math.max(1, now - grab.t) / 1000;
+  const nx = p.x + grab.dx, nz = p.z + grab.dz;
+  // keep a smoothed hand velocity so a flick carries on after release
+  it.vel.lerp(new THREE.Vector2((nx - it.obj.position.x) / step, (nz - it.obj.position.z) / step), 0.5);
+  it.obj.position.x = nx;
+  it.obj.position.z = nz;
+  grab.t = now;
+});
+function letGo(e) {
+  if (!grab || e.pointerId !== grab.id) return;
+  const it = grab.item;
+  // flicked off-centre, a piece turns as it slides
+  it.spin = THREE.MathUtils.clamp((grab.dx * it.vel.y - grab.dz * it.vel.x) * 900, -14, 14) * (it.isBill ? 0.4 : 1);
+  if (it.vel.length() > 1.2) it.vel.setLength(1.2);
+  grab = null;
+  document.body.classList.remove('agarrando');
+}
+addEventListener('pointerup', letGo);
+addEventListener('pointercancel', letGo);
+// on touch screens a drag that starts on a piece moves the piece, anywhere else it scrolls the page
+addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  if (e.touches.length === 1 && !e.target.closest('a, button') && itemAt(t.clientX, t.clientY)) e.preventDefault();
+}, { passive: false });
+
+const bounds = { x: 0.2, z: 0.16 };
+function slide(h, dt) {
+  for (const it of h.items) {
+    const held = grab?.item === it;
+    it.lift += ((held ? 0.025 : 0) - it.lift) * Math.min(1, dt * 14);
+    it.obj.position.y = it.base + it.lift;
+    if (held) continue;
+    const p = it.obj.position;
+    p.x += it.vel.x * dt;
+    p.z += it.vel.y * dt;
+    // paper drags on the cloth sooner than metal does
+    it.vel.multiplyScalar(Math.exp(-dt * (it.isBill ? 5 : 2.4)));
+    if (it.isBill) it.obj.rotation.y += it.spin * dt;
+    else it.obj.rotation.z += it.spin * dt;
+    it.spin *= Math.exp(-dt * 2.2);
+    for (const [k, v] of [['x', 'x'], ['z', 'y']]) {
+      if (Math.abs(p[k]) > bounds[k]) { p[k] = Math.sign(p[k]) * bounds[k]; it.vel[v] *= -0.45; }
+    }
+  }
+  // coins knock into each other: equal masses swap their velocity along the line between centres
+  const coins = h.items.filter((i) => !i.isBill);
+  for (let i = 0; i < coins.length; i++) for (let j = i + 1; j < coins.length; j++) {
+    const a = coins[i], b = coins[j];
+    const dx = b.obj.position.x - a.obj.position.x, dz = b.obj.position.z - a.obj.position.z, d = Math.hypot(dx, dz), min = a.r + b.r;
+    if (d >= min || d === 0 || Math.abs(a.lift - b.lift) > 0.01) continue;
+    const nx = dx / d, nz = dz / d, push = (min - d) / 2;
+    a.obj.position.x -= nx * push; a.obj.position.z -= nz * push;
+    b.obj.position.x += nx * push; b.obj.position.z += nz * push;
+    const rel = (b.vel.x - a.vel.x) * nx + (b.vel.y - a.vel.y) * nz;
+    if (rel < 0) { a.vel.x += rel * nx; a.vel.y += rel * nz; b.vel.x -= rel * nx; b.vel.y -= rel * nz; }
+  }
 }
 
 // ---------------------------------------------------------------- cara o ceca

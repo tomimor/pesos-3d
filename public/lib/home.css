@@ -309,6 +309,9 @@
   text-wrap: balance;
 }
 .mesa p { margin: 0; color: var(--paper-dim); max-width: 34ch; }
+.mesa .pista { margin-top: 18px; font-family: var(--display); font-style: italic; font-size: 20px; color: var(--glow); }
+body.agarrable { cursor: grab; }
+body.agarrando, body.agarrando * { cursor: grabbing; user-select: none; }
 
 /* ---------- archive ---------- */
 .archivo {
