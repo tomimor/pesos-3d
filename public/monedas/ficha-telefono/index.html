@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ficha de teléfono — pesos-3d</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<style>html,body{margin:0;height:100%;overflow:hidden} three-d-stage:not(:defined){visibility:hidden}
+  .hud{position:fixed;top:16px;left:16px;z-index:1;display:flex;gap:8px;align-items:baseline;font:500 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1a1915}
+  .hud a{color:inherit;opacity:.6;text-decoration:none}.hud a:hover{opacity:1}.hud span{opacity:.35}
+  .hud h1{font:inherit;margin:0}
+</style>
+</head>
+<body>
+<header class="hud"><a href="../../">pesos-3d</a><span>/</span><h1>Ficha de teléfono</h1></header>
+<three-d-stage name="telefono-token" autorotate></three-d-stage>
+<script src="../../lib/stage.js"></script>
+<script type="module">
+import { buildCoin } from '../../lib/coin-lab.js';
+const stage = document.querySelector('three-d-stage');
+const { THREE } = await stage.ready;
+stage.setObject(await buildCoin(THREE, {
+  name: 'telefono_token',
+  obverse: '../fotos/telefono-anverso.jpg',
+  reverse: '../fotos/telefono-reverso.jpg',
+  D: 19, T: 2.2, rimW: 0, rimH: 0, relief: 0.1, bevel: 0.15,
+  metal: { metalness: 0.35, roughness: 0.45 },
+  grooves: [
+    { wall: -0.686, floor: 0.136, ramp: 0.19, depth: 0.5 },
+    { wall: 0.317, floor: 0.133, ramp: 0.17, depth: 0.5 },
+  ],
+  edge: { mode: 'faceRing', source: 'reverse' },
+}));
+</script>
+</body>
+</html>

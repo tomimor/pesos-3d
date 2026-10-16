@@ -1,0 +1,17 @@
+{
+  "name": "pesos-3d",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Billetes y monedas argentinas en 3D.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wrangler dev",
+    "export": "node scripts/export.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "^4.5.1",
+    "playwright": "^1.61.1",
+    "wrangler": "^4.24.0"
+  }
+}

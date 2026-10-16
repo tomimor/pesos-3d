@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>50 pesos · Malvinas — pesos-3d</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<style>
+  html,body{margin:0;height:100%;background:#2a2826}
+  three-d-stage:not(:defined){visibility:hidden}
+
+  .hud{position:fixed;top:16px;left:16px;z-index:1;display:flex;gap:8px;align-items:baseline;font:500 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#f0ebe1}
+  .hud a{color:inherit;opacity:.6;text-decoration:none}.hud a:hover{opacity:1}.hud span{opacity:.35}
+  .hud h1{font:inherit;margin:0}
+  three-d-stage{--stage-note:rgba(240,235,225,.7)}
+</style>
+</head>
+<body>
+<header class="hud"><a href="../../">pesos-3d</a><span>/</span><h1>50 pesos · Malvinas</h1></header>
+<three-d-stage view="top" name="argentina-50-pesos-malvinas" background="#2a2826"></three-d-stage>
+<script src="../../lib/stage.js"></script>
+<script type="module">
+const stage = document.querySelector('three-d-stage');
+const { THREE } = await stage.ready;
+
+// Real-world size (m): 155 mm long, depth from scan aspect 3624:1488
+const W = 0.155, D = W * 1488 / 3624, T = 0.00011; // 155 × 65 mm
+const hw = W / 2, hd = D / 2;
+
+const loader = new THREE.TextureLoader();
+const [front, back] = await Promise.all([
+  loader.loadAsync('texturas/frente.jpg'),
+  loader.loadAsync('texturas/dorso.jpg'),
+]);
+// Full-resolution scans (3624 px wide ≈ 590 dpi), trilinear mipmaps + max anisotropy for crisp microprint at grazing angles
+const maxAniso = stage._renderer ? stage._renderer.capabilities.getMaxAnisotropy() : 16;
+for (const t of [front, back]) { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = true; }
+const bumpF = front.clone(); bumpF.colorSpace = THREE.NoColorSpace;
+const bumpB = back.clone();  bumpB.colorSpace = THREE.NoColorSpace;
+
+// Same paper both sides; back gets a light self-illumination to offset the key light coming from above
+const matFront = new THREE.MeshStandardMaterial({ name: 'bill_front', map: front, bumpMap: bumpF, bumpScale: 0.22, roughness: 0.86, metalness: 0 });
+const matBack  = new THREE.MeshStandardMaterial({ name: 'bill_back',  map: back,  bumpMap: bumpB, bumpScale: 0.22, roughness: 0.86, metalness: 0,
+  emissive: 0xffffff, emissiveMap: back, emissiveIntensity: 0.64 }); // 0.64 ≈ top-side light (hemi 1.0 + key 1.62 + fill 0.21)/π minus underside hemi 0.83/π
+const matEdge  = new THREE.MeshStandardMaterial({ name: 'paper_edge', color: 0xf1efe9, roughness: 1, metalness: 0 });
+
+// Optically variable ink on the front sun: gold ↔ lime green with a rolling bright bar and glitter as the note tilts.
+// Mask covers the sun (texture px 366,900 → 872,1406 of 3624×1488); the white "50" stays paper.
+const ovMask = await loader.loadAsync('texturas/ovi-sol.png');
+ovMask.colorSpace = THREE.NoColorSpace;
+// Same ink on the three security-thread windows (texture px 1110,60 → 1290,1370); printed ink and demetalised "50" text are excluded from the mask.
+const ovThread = await loader.loadAsync('texturas/ovi-hilo.png');
+ovThread.colorSpace = THREE.NoColorSpace;
+const ovU = {
+  uMask: { value: ovMask },
+  uAxisX: { value: new THREE.Vector3(1, 0, 0) },
+  uAxisZ: { value: new THREE.Vector3(0, 0, 1) },
+  uRect: { value: new THREE.Vector4(366 / 3624, 1 - 1406 / 1488, 872 / 3624, 1 - 900 / 1488) },
+  uThread: { value: ovThread },
+  uRectT: { value: new THREE.Vector4(1110 / 3624, 1 - 1370 / 1488, 1290 / 3624, 1 - 60 / 1488) },
+};
+matFront.onBeforeCompile = (sh) => {
+  Object.assign(sh.uniforms, ovU);
+  sh.fragmentShader = sh.fragmentShader
+    .replace('#include <common>', `#include <common>
+uniform sampler2D uMask; uniform vec3 uAxisX; uniform vec3 uAxisZ; uniform vec4 uRect;
+uniform sampler2D uThread; uniform vec4 uRectT;
+float ovHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float ovM = 0.0; float ovBand = 0.0; vec3 ovCol = vec3(0.0);
+float ovT = 0.0; float ovBandT = 0.0; vec3 ovColT = vec3(0.0);`)
+    .replace('#include <map_fragment>', `#include <map_fragment>
+{
+  vec2 s = (vMapUv - uRect.xy) / (uRect.zw - uRect.xy);
+  float inside = step(0.0, s.x) * step(s.x, 1.0) * step(0.0, s.y) * step(s.y, 1.0);
+  ovM = inside * smoothstep(0.3, 0.7, texture2D(uMask, clamp(s, 0.0, 1.0)).r);
+  ovM *= smoothstep(0.0, 0.02, s.x) * smoothstep(1.0, 0.98, s.x) * smoothstep(0.0, 0.02, s.y) * smoothstep(1.0, 0.98, s.y);
+  vec3 V = normalize(vViewPosition);
+  float tz = dot(V, uAxisZ);                 // tilt along the note's short axis → rolls the bar
+  float tx = dot(V, uAxisX);
+  float ang = clamp(length(vec2(tx, tz)), 0.0, 1.0);   // 0 face-on … 1 grazing
+  float hueT = smoothstep(0.3, 0.8, ang);
+  float d = (s.y - (0.5 - clamp(tz, -1.0, 1.0) * 0.5)) / 0.22;
+  ovBand = exp(-d * d);
+  vec3 gold = vec3(0.92, 0.55, 0.08), lime = vec3(0.50, 0.82, 0.06);
+  vec3 hue  = mix(gold, lime, hueT);
+  vec3 dark = mix(vec3(0.13, 0.11, 0.035), vec3(0.07, 0.12, 0.025), hueT);
+  vec2 g = floor(vMapUv * vec2(3624.0, 1488.0) * 0.75);
+  float sp = smoothstep(0.8, 1.0, ovHash(g + floor((tz + tx) * 16.0)));
+  ovCol = mix(dark, hue, ovBand) * (0.8 + 0.7 * sp * (0.35 + ovBand));
+  diffuseColor.rgb = mix(diffuseColor.rgb, ovCol, ovM);
+  // security thread: same inks, bar rolls along the thread's length, scan detail kept for the metallic grain
+  vec2 st = (vMapUv - uRectT.xy) / (uRectT.zw - uRectT.xy);
+  float insT = step(0.0, st.x) * step(st.x, 1.0) * step(0.0, st.y) * step(st.y, 1.0);
+  ovT = insT * texture2D(uThread, clamp(st, 0.0, 1.0)).r;
+  float dT = (st.y - (0.5 - clamp(tz, -1.0, 1.0) * 0.55)) / 0.16;
+  ovBandT = exp(-dT * dT);
+  float scanL = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
+  vec2 gT = floor(vMapUv * vec2(3624.0, 1488.0) * 0.9);
+  float spT = smoothstep(0.82, 1.0, ovHash(gT + floor((tz - tx) * 18.0) + 17.0));
+  ovColT = mix(dark * 1.4, hue, ovBandT) * (0.75 + 0.6 * spT * (0.35 + ovBandT));
+  diffuseColor.rgb = mix(diffuseColor.rgb, ovColT * (0.6 + 1.1 * scanL), ovT * 0.92);
+}`)
+    .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+roughnessFactor = mix(roughnessFactor, 0.38, max(ovM, ovT));`)
+    .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
+metalnessFactor = mix(metalnessFactor, 0.3, max(ovM, ovT));`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+totalEmissiveRadiance += ovM * ovCol * ovBand * 0.6 + ovT * ovColT * ovBandT * 0.55;`);
+};
+
+// Box groups: 0 +x, 1 -x, 2 +y (front), 3 -y (back), 4 +z, 5 -z
+const geo = new THREE.BoxGeometry(W, T, D, 220, 1, 90);
+// Back UVs rotated 180° so the reverse reads upright when the note is turned side-to-side
+{ const n = geo.attributes.normal, uv = geo.attributes.uv;
+  for (let i = 0; i < n.count; i++) if (n.getY(i) < -0.5) uv.setXY(i, 1 - uv.getX(i), 1 - uv.getY(i)); }
+
+// Crisp, lightly handled note: soft center fold, gentle wave, ends lifting, faint ripples
+const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function lift(x, z, t) {
+  const u = x / hw, v = z / hd;
+  const b = Math.sin(t * 0.9), c = Math.sin(t * 0.6 + 1.3);
+  let y = 0;
+  y += 0.0045 * Math.exp(-u * u * 2.6);
+  y += (0.0035 + 0.001 * b) * Math.sin(u * Math.PI * 1.4 + 0.5) * (0.65 + 0.35 * Math.cos(v * 1.2));
+  y += (0.0065 + 0.0015 * c) * Math.pow(sstep(0.4, 1, u), 2) * (0.75 + 0.4 * sstep(-0.2, 1, -v));
+  y += (0.004 + 0.0012 * b) * Math.pow(sstep(0.5, 1, -u), 2) * (0.65 + 0.5 * sstep(-0.3, 1, v));
+  y += 0.0016 * v * v * (1 - 0.4 * Math.abs(u));
+  y += 0.00025 * Math.sin(u * 11 + v * 4 + t * 0.7) * Math.cos(v * 6 - u * 3);
+  return y;
+}
+const p = geo.attributes.position;
+const baseY = new Float32Array(p.count);
+for (let i = 0; i < p.count; i++) baseY[i] = p.getY(i);
+function deform(t) {
+  let minY = Infinity;
+  for (let i = 0; i < p.count; i++) {
+    const y = baseY[i] + lift(p.getX(i), p.getZ(i), t);
+    p.setY(i, y); if (y < minY) minY = y;
+  }
+  for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) - minY);
+  p.needsUpdate = true;
+  geo.computeVertexNormals();
+  geo.computeBoundingSphere();
+}
+deform(0);
+
+const bill = new THREE.Mesh(geo, [matEdge, matEdge, matFront, matBack, matEdge, matEdge]);
+bill.name = 'banknote_50_pesos_malvinas';
+bill.castShadow = true; bill.receiveShadow = true;
+
+const model = new THREE.Group();
+model.name = 'BCRA_50_Pesos_Malvinas';
+model.add(bill);
+stage.setObject(model);
+if (stage._controls) stage._controls.minDistance = 0.015; // allow close inspection of microprint
+
+const clock = new THREE.Clock();
+(function tick() {
+  deform(clock.getElapsedTime());
+  const cam = stage._camera;
+  if (cam) {
+    ovU.uAxisX.value.set(1, 0, 0).transformDirection(cam.matrixWorldInverse);
+    ovU.uAxisZ.value.set(0, 0, 1).transformDirection(cam.matrixWorldInverse);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

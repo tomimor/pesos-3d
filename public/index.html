@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pesos-3d — billetes y monedas argentinas en 3D</title>
+<meta name="description" content="Billetes y monedas argentinas en 3D. Abiertos, descargables en GLB.">
+<meta property="og:title" content="pesos-3d">
+<meta property="og:description" content="Billetes y monedas argentinas en 3D. Abiertos, descargables en GLB.">
+<meta property="og:image" content="https://pesos.tomimoreno.com.ar/previews/50-pesos.webp">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%2374acdf'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23f6b40e'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f0eee6;
+    --ink: #1a1915;
+    --muted: rgba(26, 25, 21, 0.55);
+    --line: rgba(26, 25, 21, 0.12);
+    --card: #e8e5db;
+    --celeste: #74acdf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1b19;
+      --ink: #f0ebe1;
+      --muted: rgba(240, 235, 225, 0.55);
+      --line: rgba(240, 235, 225, 0.12);
+      --card: #2a2826;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 56px 16px 40px; }
+  header { border-top: 3px solid var(--celeste); padding-top: 20px; margin-bottom: 48px; }
+  h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--muted); }
+  h2 { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 16px; }
+  section { margin-bottom: 48px; }
+  ul.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .grid li { position: relative; }
+  .grid a.card { display: block; color: inherit; text-decoration: none; }
+  .grid img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; background: var(--card); transition: transform 0.2s ease; }
+  .grid a.card:hover img { transform: translateY(-2px); }
+  .grid .name { display: block; margin-top: 10px; font-weight: 500; }
+  .grid a.glb { position: absolute; right: 0; bottom: 1px; font-size: 12px; color: var(--muted); text-decoration: none; }
+  .grid a.glb:hover { color: var(--ink); }
+  footer { border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: 13px; }
+  footer p { margin: 0 0 8px; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>pesos-3d</h1>
+    <p>Billetes y monedas argentinas en 3D. Abiertos y descargables.</p>
+  </header>
+
+  <section>
+    <h2>Billetes</h2>
+    <ul class="grid">
+      <li><a class="card" href="billetes/50-pesos/"><img src="previews/50-pesos.webp" alt="" width="600" height="400"><span class="name">50 pesos · Malvinas</span></a><a class="glb" href="modelos/50-pesos.glb" download>GLB</a></li>
+      <li><a class="card" href="billetes/5-pesos/"><img src="previews/5-pesos.webp" alt="" width="600" height="400"><span class="name">5 pesos</span></a><a class="glb" href="modelos/5-pesos.glb" download>GLB</a></li>
+      <li><a class="card" href="billetes/1000000-pesos/"><img src="previews/1000000-pesos.webp" alt="" width="600" height="400"><span class="name">1.000.000 de pesos</span></a><a class="glb" href="modelos/1000000-pesos.glb" download>GLB</a></li>
+      <li><a class="card" href="billetes/2-pesos-1888/"><img src="previews/2-pesos-1888.webp" alt="" width="600" height="400"><span class="name">2 pesos · 1888</span></a><a class="glb" href="modelos/2-pesos-1888.glb" download>GLB</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Monedas y fichas</h2>
+    <ul class="grid">
+      <li><a class="card" href="monedas/1-peso/"><img src="previews/1-peso.webp" alt="" width="600" height="400"><span class="name">1 peso</span></a><a class="glb" href="modelos/1-peso.glb" download>GLB</a></li>
+      <li><a class="card" href="monedas/1-peso-hq/"><img src="previews/1-peso-hq.webp" alt="" width="600" height="400"><span class="name">1 peso · alta definición</span></a><a class="glb" href="modelos/1-peso-hq.glb" download>GLB</a></li>
+      <li><a class="card" href="monedas/25-centavos-1994/"><img src="previews/25-centavos-1994.webp" alt="" width="600" height="400"><span class="name">25 centavos · 1994</span></a><a class="glb" href="modelos/25-centavos-1994.glb" download>GLB</a></li>
+      <li><a class="card" href="monedas/token-patrio-2026/"><img src="previews/token-patrio-2026.webp" alt="" width="600" height="400"><span class="name">Primer Token Patrio · 2026</span></a><a class="glb" href="modelos/token-patrio-2026.glb" download>GLB</a></li>
+      <li><a class="card" href="monedas/cospel-subte/"><img src="previews/cospel-subte.webp" alt="" width="600" height="400"><span class="name">Cospel de subte</span></a><a class="glb" href="modelos/cospel-subte.glb" download>GLB</a></li>
+      <li><a class="card" href="monedas/ficha-telefono/"><img src="previews/ficha-telefono.webp" alt="" width="600" height="400"><span class="name">Ficha de teléfono</span></a><a class="glb" href="modelos/ficha-telefono.glb" download>GLB</a></li>
+    </ul>
+  </section>
+
+  <footer id="creditos">
+    <p>Réplicas digitales. No son dinero de curso legal.</p>
+    <p>Las caras de las monedas y fichas parten de fotos de <a href="https://numista.com">Numista</a>:
+      <a href="https://en.numista.com/2217">1 peso</a>,
+      <a href="https://en.numista.com/2216">25 centavos</a>,
+      <a href="https://en.numista.com/36075">cospel de subte</a> y
+      <a href="https://en.numista.com/catalogue/index.php?r=telefono+entel&amp;ct=exonumia">ficha de teléfono</a>.
+      Cada foto pertenece a su autor.</p>
+    <p>Texturas de billetes y modelos: <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Código: MIT. <a href="https://github.com/tomimor/pesos-3d">GitHub</a></p>
+  </footer>
+</main>
+</body>
+</html>

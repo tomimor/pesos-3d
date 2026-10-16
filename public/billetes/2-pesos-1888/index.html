@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>2 pesos · 1888 — pesos-3d</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<style>
+  html,body{margin:0;height:100%;background:#2a2826}
+  three-d-stage:not(:defined){visibility:hidden}
+
+  .hud{position:fixed;top:16px;left:16px;z-index:1;display:flex;gap:8px;align-items:baseline;font:500 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#f0ebe1}
+  .hud a{color:inherit;opacity:.6;text-decoration:none}.hud a:hover{opacity:1}.hud span{opacity:.35}
+  .hud h1{font:inherit;margin:0}
+  three-d-stage{--stage-note:rgba(240,235,225,.7)}
+</style>
+</head>
+<body>
+<header class="hud"><a href="../../">pesos-3d</a><span>/</span><h1>2 pesos · 1888</h1></header>
+<three-d-stage view="top" name="argentina-2-pesos-1888" background="#2a2826"></three-d-stage>
+<script src="../../lib/stage.js"></script>
+<script type="module">
+const stage = document.querySelector('three-d-stage');
+const { THREE } = await stage.ready;
+
+// Real-world size (m): ~176 × 72 mm, matches scan aspect 1750:716
+const W = 0.176, D = W * 716 / 1750, T = 0.00012;
+const hw = W / 2, hd = D / 2;
+
+const loader = new THREE.TextureLoader();
+const [front, back] = await Promise.all([
+  loader.loadAsync('texturas/frente.webp'),
+  loader.loadAsync('texturas/dorso.webp'),
+]);
+for (const t of [front, back]) { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 16; }
+const bumpF = front.clone(); bumpF.colorSpace = THREE.NoColorSpace;
+const bumpB = back.clone();  bumpB.colorSpace = THREE.NoColorSpace;
+
+const matFront = new THREE.MeshStandardMaterial({ name: 'bill_front', map: front, bumpMap: bumpF, bumpScale: 0.6, roughness: 0.92, metalness: 0 });
+const matBack  = new THREE.MeshStandardMaterial({ name: 'bill_back',  map: back,  bumpMap: bumpB, bumpScale: 0.35, roughness: 0.94, metalness: 0,
+  emissive: 0xffffff, emissiveMap: back, emissiveIntensity: 0.42 });
+matBack.color.setScalar(1.06);
+const matEdge  = new THREE.MeshStandardMaterial({ name: 'paper_edge', color: 0xb89a62, roughness: 1, metalness: 0 });
+
+// Box groups: 0 +x, 1 -x, 2 +y (front), 3 -y (back), 4 +z, 5 -z
+const geo = new THREE.BoxGeometry(W, T, D, 220, 1, 90);
+// Back face: rotate UVs 180° so the reverse reads upright when the note is turned side-to-side (like a real banknote);
+// the back's left edge sits behind the front's right edge.
+{ const n = geo.attributes.normal, uv = geo.attributes.uv;
+  for (let i = 0; i < n.count; i++) if (n.getY(i) < -0.5) uv.setXY(i, 1 - uv.getX(i), 1 - uv.getY(i)); }
+
+// Worn-paper deformation: center fold, a softer horizontal fold, lifted corner, crinkle
+const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+// Soft, draped paper: smooth rounded fold, long S-wave, curling ends, gentle breathing motion
+function lift(x, z, t) {
+  const u = x / hw, v = z / hd;                         // -1..1
+  const b = Math.sin(t * 0.9), c = Math.sin(t * 0.6 + 1.3);
+  let y = 0;
+  y += 0.007 * Math.exp(-u * u * 2.2);                  // soft rounded center fold
+  y += (0.0045 + 0.0012 * b) * Math.sin(u * Math.PI * 1.5 + 0.4) * (0.6 + 0.4 * Math.cos(v * 1.2)); // long S-wave
+  y += (0.009 + 0.002 * c) * Math.pow(sstep(0.35, 1, u), 2) * (0.7 + 0.5 * sstep(-0.2, 1, -v)); // right end curls up
+  y += (0.0055 + 0.0015 * b) * Math.pow(sstep(0.45, 1, -u), 2) * (0.6 + 0.6 * sstep(-0.3, 1, v)); // left end lifts
+  y += 0.0022 * v * v * (1 - 0.4 * Math.abs(u));        // cross-curl along long edges
+  y += 0.0005 * Math.sin(u * 13 + v * 5 + t * 0.7) * Math.cos(v * 7 - u * 3); // soft ripples
+  y += 0.00012 * Math.sin(u * 47 - v * 29) + 0.00008 * Math.sin(u * 17 + v * 61); // crinkle
+  return y;
+}
+const p = geo.attributes.position;
+const baseY = new Float32Array(p.count);
+for (let i = 0; i < p.count; i++) baseY[i] = p.getY(i);
+function deform(t) {
+  let minY = Infinity;
+  for (let i = 0; i < p.count; i++) {
+    const y = baseY[i] + lift(p.getX(i), p.getZ(i), t);
+    p.setY(i, y); if (y < minY) minY = y;
+  }
+  for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) - minY);
+  p.needsUpdate = true;
+  geo.computeVertexNormals();
+  geo.computeBoundingSphere();
+}
+deform(0);
+
+const bill = new THREE.Mesh(geo, [matEdge, matEdge, matFront, matBack, matEdge, matEdge]);
+bill.name = 'banknote_2_pesos_1888';
+bill.castShadow = true; bill.receiveShadow = true;
+
+const model = new THREE.Group();
+model.name = 'El_Banco_Nacional_2_Pesos';
+model.add(bill);
+stage.setObject(model);
+
+const clock = new THREE.Clock();
+(function tick() { deform(clock.getElapsedTime()); requestAnimationFrame(tick); })();
+</script>
+</body>
+</html>

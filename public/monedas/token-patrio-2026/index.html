@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Primer Token Patrio · 2026 — pesos-3d</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden}
+  three-d-stage:not(:defined){visibility:hidden}
+
+  .hud{position:fixed;top:16px;left:16px;z-index:1;display:flex;gap:8px;align-items:baseline;font:500 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1a1915}
+  .hud a{color:inherit;opacity:.6;text-decoration:none}.hud a:hover{opacity:1}.hud span{opacity:.35}
+  .hud h1{font:inherit;margin:0}
+</style>
+</head>
+<body>
+<header class="hud"><a href="../../">pesos-3d</a><span>/</span><h1>Primer Token Patrio · 2026</h1></header>
+<three-d-stage name="primer-token-patrio-2026" autorotate></three-d-stage>
+<script src="../../lib/stage.js"></script>
+<script src="../../lib/coin-edits.js"></script>
+<script type="module">
+const stage = document.querySelector('three-d-stage');
+const { THREE } = await stage.ready;
+
+// Real dimensions (m): Ø23 mm, 2.2 mm thick, brass centre Ø17 mm
+const R = 0.0115, RC = 0.0085, T = 0.0022;
+const RIM_W = 0.00045, RIM_H = 0.00016, RELIEF = 0.00013;
+const BASE = T / 2 - RIM_H;
+
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+
+async function prepFace(src, bright = 1, edit = null) {
+  const img = await loadImg(src);
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.filter = `brightness(${bright}) contrast(${1 + (bright - 1) * 0.4})`;
+  ctx.drawImage(img, 0, 0);
+  ctx.filter = 'none';
+  const d = ctx.getImageData(0, 0, W, H).data;
+  // find coin bounds (non-background pixels)
+  let x0 = W, x1 = 0, y0 = H, y1 = 0;
+  for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) {
+    const k = (y * W + x) * 4, a = d[k + 3], l = (d[k] + d[k + 1] + d[k + 2]) / 3;
+    if (a > 128 && l < 235) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rad = Math.min(x1 - x0, y1 - y0) / 2;
+  if (edit) edit(ctx, { W, H, cx, cy, rad });
+  // high-pass luminance → relief height
+  const blurred = r => { const b = document.createElement('canvas'); b.width = W; b.height = H; const g = b.getContext('2d', { willReadFrequently: true }); g.filter = `grayscale(1) blur(${r}px)`; g.drawImage(c, 0, 0); return g.getImageData(0, 0, W, H).data; };
+  const fine = blurred(1.2), coarse = blurred(14);
+  const hm = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const v = (fine[i * 4] - coarse[i * 4]) / 60;
+    hm[i] = Math.max(0, Math.min(1, v + 0.15));
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  tex.name = src.split('/').pop();
+  return { W, H, cx, cy, rad, hm, tex };
+}
+
+function faceGeo(f, r0, r1, nr, ns, back) {
+  const pos = [], uv = [], idx = [];
+  const z = back ? -1 : 1;
+  for (let i = 0; i <= nr; i++) {
+    const r = r0 + (r1 - r0) * i / nr;
+    for (let j = 0; j <= ns; j++) {
+      const a = j / ns * Math.PI * 2;
+      const x = r * Math.cos(a), y = r * Math.sin(a);
+      const px = f.cx + (back ? -x : x) / R * f.rad, py = f.cy - y / R * f.rad;
+      let h;
+      if (r > R - RIM_W) h = RIM_H;
+      else {
+        const hx = Math.min(f.W - 1, Math.max(0, Math.round(px))), hy = Math.min(f.H - 1, Math.max(0, Math.round(py)));
+        const edge = Math.min(1, Math.abs(r - RC) / 0.0002); // flatten across the metal seam
+        h = f.hm[hy * f.W + hx] * RELIEF * edge;
+      }
+      pos.push(x, y, z * (BASE + h));
+      uv.push(px / f.W, 1 - py / f.H);
+    }
+  }
+  const row = ns + 1;
+  for (let i = 0; i < nr; i++) for (let j = 0; j < ns; j++) {
+    const a = i * row + j, b = a + row, c = a + 1, d = b + 1;
+    if (back) idx.push(a, c, b, c, d, b); else idx.push(a, b, c, c, b, d);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// ---- interventions: legends re-struck from the coin's own glyphs (see coin-edits.js) ----
+const editObv = (ctx, f) => CoinEdits.obverse(ctx, f);
+const editRev = (ctx, f) => CoinEdits.reverse(ctx, f);
+const [obv, rev] = await Promise.all([prepFace('../fotos/1-peso-anverso.jpg', 1, editObv), prepFace('../fotos/1-peso-reverso.jpg', 1.2, editRev)]);
+
+const mat = (name, map) => new THREE.MeshStandardMaterial({ name, map, color: 0xffffff, metalness: 0.3, roughness: 0.38 });
+const nickelObv = mat('cupronickel_obverse', obv.tex), brassObv = mat('brass_obverse', obv.tex);
+const nickelRev = mat('cupronickel_reverse', rev.tex), brassRev = mat('brass_reverse', rev.tex);
+// edge texture: cupronickel tone sampled from the photographed ring, with circumferential lathe lines, scratches and toning
+function ringTone(f) {
+  const c = f.tex.image, g = c.getContext('2d'); const d = g.getImageData(0, 0, c.width, c.height).data;
+  let r = 0, gg = 0, b = 0, n = 0;
+  for (let k = 0; k < 720; k++) {
+    const a = k / 720 * Math.PI * 2, rr = f.rad * (0.955 + (k % 5) * 0.006);
+    const x = Math.round(f.cx + rr * Math.cos(a)), y = Math.round(f.cy + rr * Math.sin(a)), i = (y * c.width + x) * 4;
+    if (d[i + 3] < 128) continue; r += d[i]; gg += d[i + 1]; b += d[i + 2]; n++;
+  }
+  return [r / n, gg / n, b / n];
+}
+const tone = ringTone(obv).map((v, i) => (v + ringTone(rev)[i]) / 2);
+function edgeTexture() {
+  const W = 4096, H = 256, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const [r, gr, b] = tone;
+  g.fillStyle = `rgb(${r},${gr},${b})`; g.fillRect(0, 0, W, H);
+  // broad toning variation around the circumference
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * W, w = 80 + Math.random() * 400, k = (Math.random() - 0.62) * 80;
+    const grd = g.createLinearGradient(x - w, 0, x + w, 0);
+    const col = k > 0 ? `rgba(255,252,240,${k / 255})` : `rgba(70,60,40,${-k / 255})`;
+    grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(0.5, col); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(x - w, 0, w * 2, H);
+  }
+  // fine lathe lines running around the edge
+  for (let y = 0; y < H; y++) {
+    const k = (Math.random() - 0.5) * 34;
+    g.fillStyle = k > 0 ? `rgba(255,255,255,${k / 255})` : `rgba(30,25,15,${-k / 255})`;
+    g.fillRect(0, y, W, 1);
+  }
+  // scratches and nicks
+  for (let i = 0; i < 2200; i++) {
+    const x = Math.random() * W, y = Math.random() * H, l = 4 + Math.random() * 90;
+    g.strokeStyle = Math.random() < 0.45 ? 'rgba(255,255,250,0.22)' : 'rgba(40,34,22,0.3)';
+    g.lineWidth = 0.6 + Math.random(); g.beginPath(); g.moveTo(x, y); g.lineTo(x + l, y + (Math.random() - 0.5) * 8); g.stroke();
+  }
+  // dings: small dark pits with a bright lip
+  for (let i = 0; i < 260; i++) {
+    const x = Math.random() * W, y = Math.random() * H, s = 1 + Math.random() * 3.5;
+    g.fillStyle = 'rgba(35,28,16,0.45)'; g.beginPath(); g.ellipse(x, y, s * 1.6, s, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(255,250,235,0.25)'; g.beginPath(); g.ellipse(x + 1, y - s * 0.8, s, s * 0.4, 0, 0, Math.PI * 2); g.fill();
+  }
+  // patchy handling tarnish
+  for (let i = 0; i < 40; i++) {
+    const x = Math.random() * W, y = Math.random() * H, s = 30 + Math.random() * 160;
+    const rg = g.createRadialGradient(x, y, 0, x, y, s);
+    rg.addColorStop(0, `rgba(95,80,45,${0.12 + Math.random() * 0.16})`); rg.addColorStop(1, 'rgba(95,80,45,0)');
+    g.fillStyle = rg; g.fillRect(x - s, y - s, s * 2, s * 2);
+  }
+  // darker grime toward the corners where faces meet
+  const v = g.createLinearGradient(0, 0, 0, H);
+  v.addColorStop(0, 'rgba(55,45,25,0.55)'); v.addColorStop(0.22, 'rgba(55,45,25,0)');
+  v.addColorStop(0.78, 'rgba(55,45,25,0)'); v.addColorStop(1, 'rgba(55,45,25,0.55)');
+  g.fillStyle = v; g.fillRect(0, 0, W, H);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 8; t.name = 'edge_cupronickel';
+  return t;
+}
+const edgeTex = edgeTexture();
+const edgeMat = new THREE.MeshStandardMaterial({ name: 'cupronickel_edge', map: edgeTex, bumpMap: edgeTex, bumpScale: 1.1, color: 0xffffff, metalness: 0.28, roughness: 0.46 });
+const seamMat = new THREE.MeshStandardMaterial({ name: 'seam', color: 0x6e6858, metalness: 0.2, roughness: 0.6 });
+
+const coin = new THREE.Group(); coin.name = 'argentina_1_peso';
+const NS = 640;
+const add = (name, geo, m) => { const mesh = new THREE.Mesh(geo, m); mesh.name = name; mesh.castShadow = mesh.receiveShadow = true; coin.add(mesh); };
+add('obverse_center', faceGeo(obv, 0, RC, 180, NS, false), brassObv);
+add('obverse_ring', faceGeo(obv, RC, R, 80, NS, false), nickelObv);
+add('reverse_center', faceGeo(rev, 0, RC, 180, NS, true), brassRev);
+add('reverse_ring', faceGeo(rev, RC, R, 80, NS, true), nickelRev);
+
+// edge with rounded shoulders so the rim rolls into the side like a struck coin
+const BEV = 0.00022, prof = [];
+prof.push(new THREE.Vector2(R - BEV - 0.00005, -T / 2 - 0.000005));
+for (let i = 0; i <= 8; i++) { const a = -Math.PI / 2 + i / 8 * Math.PI / 2; prof.push(new THREE.Vector2(R - BEV + BEV * Math.cos(a), -T / 2 + BEV + BEV * Math.sin(a))); }
+for (let i = 0; i <= 8; i++) { const a = i / 8 * Math.PI / 2; prof.push(new THREE.Vector2(R - BEV + BEV * Math.cos(a), T / 2 - BEV + BEV * Math.sin(a))); }
+prof.push(new THREE.Vector2(R - BEV - 0.00005, T / 2 + 0.000005));
+const edge = new THREE.LatheGeometry(prof, 384); edge.rotateX(Math.PI / 2);
+add('edge', edge, edgeMat);
+// thin dark seam where brass core meets the ring
+for (const s of [1, -1]) {
+  const seam = new THREE.RingGeometry(RC - 0.00003, RC + 0.00003, 256);
+  if (s < 0) seam.rotateY(Math.PI);
+  seam.translate(0, 0, s * (BASE + 0.000005));
+  add(s > 0 ? 'seam_obverse' : 'seam_reverse', seam, seamMat);
+}
+
+coin.position.y = R; // standing on its edge
+stage.setObject(coin);
+</script>
+</body>
+</html>
