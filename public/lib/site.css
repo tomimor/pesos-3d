@@ -14,7 +14,7 @@
 
 * { box-sizing: border-box; }
 
-html { background: var(--ink); }
+html { background: var(--ink); scrollbar-color: color-mix(in oklab, var(--paper) 28%, transparent) transparent; caret-color: var(--glow); }
 
 body {
   margin: 0;
@@ -79,6 +79,8 @@ a { color: inherit; }
   font-size: 19px;
   letter-spacing: -0.01em;
   text-decoration: none;
+  padding: 8px 0;
+  margin: -8px 0;
 }
 .wordmark sup { font-family: var(--text); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; margin-left: 2px; color: var(--glow); }
 

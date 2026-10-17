@@ -42,7 +42,7 @@ three-d-stage:not(:defined) { visibility: hidden; }
   align-items: center;
   padding: 20px clamp(16px, 4vw, 48px);
 }
-.volver { font-size: 14px; text-decoration: none; opacity: 0.8; font-variation-settings: 'wdth' 108; }
+.volver { font-size: 14px; text-decoration: none; opacity: 0.8; font-variation-settings: 'wdth' 108; padding: 11px 0; margin: -11px 0; }
 .volver:hover { opacity: 1; }
 
 .pieza-info {
